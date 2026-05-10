@@ -21,13 +21,15 @@
 #' @return Path to the written `.md` file (invisibly).
 #' @export
 pdf_to_md <- function(pdf_path,
-                      out_dir    = "literature/fulltext",
-                      cite_key   = NULL,
-                      marker_url = NULL,
-                      force_ocr  = FALSE,
-                      page_range = NULL,
-                      paginate   = FALSE,
-                      timeout    = 600) {
+                      out_dir     = "literature/fulltext",
+                      cite_key    = NULL,
+                      marker_url  = NULL,
+                      marker_user = NULL,
+                      marker_pass = NULL,
+                      force_ocr   = FALSE,
+                      page_range  = NULL,
+                      paginate    = FALSE,
+                      timeout     = 600) {
 
   stopifnot(file.exists(pdf_path))
 
@@ -49,7 +51,21 @@ pdf_to_md <- function(pdf_path,
   )
   if (!is.null(page_range)) body_parts$page_range <- page_range
 
-  resp <- httr2::request(marker_url) |>
+  req <- httr2::request(marker_url)
+
+  if (!is.null(marker_user) && !is.null(marker_pass)) {
+    req <- req |>
+      httr2::req_auth_basic(username = marker_user, password = marker_pass)
+  } else {
+    marker_user <- Sys.getenv("MARKERSYNC_USER", unset = "")
+    marker_pass <- Sys.getenv("MARKERSYNC_PASS", unset = "")
+    if (nzchar(marker_user) && nzchar(marker_pass)) {
+      req <- req |>
+        httr2::req_auth_basic(username = marker_user, password = marker_pass)
+    }
+  }
+
+  resp <- req |>
     httr2::req_body_multipart(!!!body_parts) |>
     httr2::req_timeout(timeout) |>
     httr2::req_error(is_error = function(r) FALSE) |>
