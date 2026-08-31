@@ -14,6 +14,8 @@
   README, where it had been missing since the feature was added.
 * Fixed the `install_github("YOUR-USERNAME/markersync")` placeholder in the
   README.
+* Package author and copyright holder corrected to Richard Bluhm; both had
+  been left as the "Lab Member" scaffold placeholder.
 * Ships an agent skill for Claude Code and Codex under `skills/`, plus
   `doctor.R` (diagnoses every link in the chain) and `convert.R` (standalone
   single-file conversion). The repository doubles as a Claude Code plugin

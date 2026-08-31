@@ -46,11 +46,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Lab Member \email{richard.bluhm@ivr.uni-stuttgart.de}
+\strong{Maintainer}: Richard Bluhm \email{richard.bluhm@ivr.uni-stuttgart.de}
 
 Authors:
 \itemize{
-  \item Lab Member \email{richard.bluhm@ivr.uni-stuttgart.de}
+  \item Richard Bluhm \email{richard.bluhm@ivr.uni-stuttgart.de}
 }
 
 }

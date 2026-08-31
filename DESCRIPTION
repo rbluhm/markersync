@@ -2,7 +2,7 @@ Package: markersync
 Title: Sync Zotero PDFs to Markdown via a Marker Server
 Version: 0.3.0
 Authors@R:
-    person("Lab", "Member", email = "richard.bluhm@ivr.uni-stuttgart.de", role = c("aut", "cre"))
+    person("Richard", "Bluhm", email = "richard.bluhm@ivr.uni-stuttgart.de", role = c("aut", "cre"))
 Description: Tools for converting Zotero-managed PDFs to Markdown via a
     self-hosted Marker server. Walks a directory of literature notes
     (named by BibTeX citekey), resolves each note's PDF from a Zotero
