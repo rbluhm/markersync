@@ -9,6 +9,8 @@ pdf_to_md(
   out_dir = "literature/fulltext",
   cite_key = NULL,
   marker_url = NULL,
+  marker_user = NULL,
+  marker_pass = NULL,
   force_ocr = FALSE,
   page_range = NULL,
   paginate = FALSE,
@@ -20,12 +22,20 @@ pdf_to_md(
 
 \item{out_dir}{Output directory for the Markdown (default: \code{"literature/fulltext"}).}
 
-\item{cite_key}{Optional citekey to use as the output filename stem.}
+\item{cite_key}{Optional citekey to use as the output filename stem.
+Defaults to the PDF's basename.}
 
-\item{marker_url}{Full URL of the Marker upload endpoint. Defaults to
-\code{MARKERSYNC_URL} env var.}
+\item{marker_url}{Full URL of the Marker upload endpoint. Read from the
+\code{MARKERSYNC_URL} environment variable if \code{NULL}. An error is thrown if
+neither is set.}
 
-\item{force_ocr}{Pass \code{TRUE} to force OCR on every page.}
+\item{marker_user, marker_pass}{Optional HTTP basic-auth credentials. Read
+from \code{MARKERSYNC_USER} / \code{MARKERSYNC_PASS} if \code{NULL}. Both must be
+present for authentication to be attempted; a warning is issued if only
+one is set.}
+
+\item{force_ocr}{Pass \code{TRUE} to force OCR on every page (helpful for
+scanned PDFs).}
 
 \item{page_range}{Optional zero-indexed page range, e.g. \code{"0,5-10,20"}.}
 
@@ -38,5 +48,7 @@ Path to the written \code{.md} file (invisibly).
 }
 \description{
 Sends a PDF to a self-hosted Marker server and saves the returned
-Markdown to \code{out_dir}.
+Markdown to \code{out_dir}. If the response includes embedded images, they
+are decoded to \verb{out_dir/figures/<stem>/} and the Markdown image links
+are rewritten to relative paths.
 }

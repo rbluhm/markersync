@@ -7,13 +7,13 @@
 find_zotero_pdf(item_id, storage_root)
 }
 \arguments{
-\item{item_id}{Zotero attachment item ID.}
+\item{item_id}{Zotero attachment item ID (from a \verb{zotero://select} link).}
 
 \item{storage_root}{Path to \code{Zotero/storage}.}
 }
 \value{
 Absolute path to the first PDF in \verb{<storage_root>/<item_id>/},
-or \code{NULL} if missing.
+or \code{NULL} if the directory or any PDF is missing.
 }
 \description{
 Locate a Zotero attachment PDF on disk

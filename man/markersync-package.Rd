@@ -7,15 +7,51 @@
 \title{markersync: Sync Zotero PDFs to Markdown via a Marker server}
 \description{
 Tools for converting Zotero-managed PDFs to Markdown via a self-hosted
-Marker server.
+Marker server. The typical workflow:
+}
+\details{
+\enumerate{
+\item Write a literature note in \verb{literature/notes/<citekey>.md} that
+contains a \verb{zotero://select/library/items/<ID>} link to the PDF
+(the Zotero plugin "Notero" or "Better Notes" emit these by
+default).
+\item Run \code{\link[=sync_fulltext]{sync_fulltext()}} to walk the notes directory and convert any
+PDF that doesn't yet have a corresponding fulltext file.
+}
 }
 \section{Configuration}{
 
+
 Two environment variables are read at run time:
 \itemize{
-\item \code{ZOTERO_STORAGE}: path to your Zotero storage root.
-\item \code{MARKERSYNC_URL}: full URL to the Marker upload endpoint.
-}
+\item \code{ZOTERO_STORAGE}: path to your Zotero storage root. Defaults to
+\verb{~/Zotero/storage}.
+\item \code{MARKERSYNC_URL}: full URL to your Marker server's upload endpoint.
+Required (no default) — set this per machine.
 }
 
+Set these per-machine in \verb{~/.Renviron}:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{ZOTERO_STORAGE=/Users/me/Zotero/storage
+MARKERSYNC_URL=https://your-marker-server.example.com/marker/upload
+}\if{html}{\out{</div>}}
+}
+
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/rbluhm/markersync}
+  \item Report bugs at \url{https://github.com/rbluhm/markersync/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Richard Bluhm \email{richard.bluhm@ivr.uni-stuttgart.de}
+
+Authors:
+\itemize{
+  \item Richard Bluhm \email{richard.bluhm@ivr.uni-stuttgart.de}
+}
+
+}
 \keyword{internal}

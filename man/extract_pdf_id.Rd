@@ -13,5 +13,7 @@ extract_pdf_id(note_file)
 Item ID string, or \code{NULL} if none found.
 }
 \description{
-Scans a note for a \verb{zotero://select/library/items/<ID>} link.
+Scans a note for a \verb{zotero://select/library/items/<ID>} link. Prefers
+the link on a line marked \verb{**PDF:**}; falls back to the first such
+link anywhere in the file.
 }

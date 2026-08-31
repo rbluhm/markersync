@@ -3,3 +3,7 @@
 ^\.github$
 ^\.git$
 ^README\.Rmd$
+^skills$
+^\.claude-plugin$
+^\.claude$
+^\.codex$

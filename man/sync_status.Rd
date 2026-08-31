@@ -4,7 +4,10 @@
 \alias{sync_status}
 \title{Show sync status without converting}
 \usage{
-sync_status(notes_dir = "literature/notes", fulltext_dir = "literature/fulltext")
+sync_status(
+  notes_dir = "literature/notes",
+  fulltext_dir = "literature/fulltext"
+)
 }
 \arguments{
 \item{notes_dir}{Directory of literature notes.}

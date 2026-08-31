@@ -1,0 +1,17 @@
+{
+  "name": "markersync",
+  "owner": { "name": "Richard Bluhm" },
+  "metadata": {
+    "description": "Zotero -> Obsidian -> Marker literature workflow.",
+    "version": "0.3.0"
+  },
+  "plugins": [
+    {
+      "name": "markersync",
+      "description": "Convert PDFs to Markdown through a self-hosted Marker server, one file at a time or as a Zotero -> Obsidian literature workflow.",
+      "version": "0.3.0",
+      "author": { "name": "Richard Bluhm" },
+      "source": "./"
+    }
+  ]
+}
