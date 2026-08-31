@@ -19,13 +19,19 @@ The typical workflow:
 
 ```r
 # Directly from GitHub:
-remotes::install_github("YOUR-USERNAME/markersync")
+remotes::install_github("rbluhm/markersync")
 
 # Or from a local tarball:
 install.packages("markersync_X.Y.Z.tar.gz", repos = NULL, type = "source")
 ```
 
 Dependencies (`httr2`, `curl`, `base64enc`) install automatically from CRAN.
+
+> **Re-run the install after every R minor-version upgrade.** R keeps user
+> libraries per minor version (`~/R/<platform>/4.5`, `.../4.6`), so upgrading
+> R hides packages installed under the previous version rather than migrating
+> them. The symptom is `there is no package called 'markersync'` on a machine
+> where it was working yesterday.
 
 ## Configuration
 
@@ -34,11 +40,29 @@ Add to `~/.Renviron` (one-time, per machine):
 ```
 ZOTERO_STORAGE=/Users/yourname/Zotero/storage
 MARKERSYNC_URL=https://your-marker-server.example.com/marker/upload
+
+# only if your server sits behind HTTP basic auth:
+MARKERSYNC_USER=your_user
+MARKERSYNC_PASS=your_password
 ```
 
 Restart R for changes to take effect. The `MARKERSYNC_URL` must point at
 a running Marker API endpoint — see
 [datalab-to/marker](https://github.com/datalab-to/marker) for setup.
+
+Both `MARKERSYNC_USER` and `MARKERSYNC_PASS` must be set for authentication
+to be attempted; setting only one sends no credentials at all (the package
+warns when it detects this).
+
+Two things that catch people out:
+
+- `~/.Renviron` **overrides** variables inherited from the shell, so
+  `MARKERSYNC_PASS=other Rscript ...` will not do what you expect. To override
+  for a single run, use `R_ENVIRON_USER=/path/to/alt.Renviron Rscript ...`.
+- `ZOTERO_STORAGE` is the `storage` folder inside Zotero's data directory,
+  shown under *Settings → Advanced → Files and Folders*. On a snap install it
+  is `~/snap/zotero-snap/common/Zotero/storage`; on flatpak,
+  `~/.var/app/org.zotero.Zotero/data/Zotero/storage`.
 
 ## Usage
 
@@ -70,6 +94,60 @@ pdf_to_md("some-paper.pdf", cite_key = "smith2024")
 pdf_to_md("scanned.pdf",    force_ocr = TRUE)
 pdf_to_md("long-paper.pdf", page_range = "0-9")  # first 10 pages
 ```
+
+## Use it from Claude Code or Codex
+
+This repository doubles as an agent skill, so you can ask Claude Code or Codex
+to convert a PDF, sync your literature, or diagnose a failed conversion in
+plain language. The skill wraps the package and adds two standalone scripts:
+`doctor.R`, which checks every link in the chain and names the fix for each
+failure, and `convert.R`, which converts a single file without needing notes,
+a vault, or even the R package installed.
+
+**Claude Code** — install as a plugin, which keeps it updatable:
+
+```
+/plugin marketplace add rbluhm/markersync
+/plugin install markersync@markersync
+```
+
+Or copy it in manually, to `~/.claude/skills/` for every project or
+`.claude/skills/` inside one repo:
+
+```sh
+git clone https://github.com/rbluhm/markersync.git
+cp -r markersync/skills/literature-sync ~/.claude/skills/
+```
+
+**Codex** — ask Codex to install it, or copy it to `$CODEX_HOME/skills`
+(default `~/.codex/skills`), which is the only location Codex reads:
+
+```sh
+cp -r markersync/skills/literature-sync ~/.codex/skills/
+```
+
+Skills are discovered when a session starts, so restart your session after
+installing. Then just ask:
+
+> convert ~/Downloads/smith2024.pdf
+> sync my literature
+> why did desmet2017 fail to convert?
+
+You can also run the scripts directly, without an agent:
+
+```sh
+Rscript skills/literature-sync/scripts/doctor.R          # check the setup
+Rscript skills/literature-sync/scripts/convert.R paper.pdf --pages 0-9
+```
+
+`convert.R` writes to `~/.cache/markersync/` by default and accepts
+`--out DIR`, `--name STEM`, `--pages`, `--ocr`, `--print` and `--head N`. It
+needs only `httr2`, `curl` and `base64enc`, so it works on a machine that has
+credentials configured but no vault and no markersync install.
+
+The skill also ships the Obsidian note template it expects, at
+`skills/literature-sync/assets/paper_note.md`, and a full setup walkthrough at
+`skills/literature-sync/references/setup.md`.
 
 ## Note format
 

@@ -12,6 +12,10 @@
 #' @param marker_url Full URL of the Marker upload endpoint. Read from the
 #'   `MARKERSYNC_URL` environment variable if `NULL`. An error is thrown if
 #'   neither is set.
+#' @param marker_user,marker_pass Optional HTTP basic-auth credentials. Read
+#'   from `MARKERSYNC_USER` / `MARKERSYNC_PASS` if `NULL`. Both must be
+#'   present for authentication to be attempted; a warning is issued if only
+#'   one is set.
 #' @param force_ocr Pass `TRUE` to force OCR on every page (helpful for
 #'   scanned PDFs).
 #' @param page_range Optional zero-indexed page range, e.g. `"0,5-10,20"`.
@@ -62,6 +66,13 @@ pdf_to_md <- function(pdf_path,
     if (nzchar(marker_user) && nzchar(marker_pass)) {
       req <- req |>
         httr2::req_auth_basic(username = marker_user, password = marker_pass)
+    } else if (nzchar(marker_user) || nzchar(marker_pass)) {
+      warning(
+        "Only one of MARKERSYNC_USER / MARKERSYNC_PASS is set, so no ",
+        "credentials are being sent. A server requiring basic auth will ",
+        "answer 401.",
+        call. = FALSE, immediate. = TRUE
+      )
     }
   }
 
@@ -71,15 +82,45 @@ pdf_to_md <- function(pdf_path,
     httr2::req_error(is_error = function(r) FALSE) |>
     httr2::req_perform()
 
-  if (httr2::resp_status(resp) != 200) {
+  status <- httr2::resp_status(resp)
+  if (status == 401) {
     stop(
-      "Marker API returned ", httr2::resp_status(resp), ":\n",
-      substr(httr2::resp_body_string(resp), 1, 500)
+      "Marker API returned 401 Unauthorized. Check MARKERSYNC_USER and ",
+      "MARKERSYNC_PASS in ~/.Renviron, and note that ~/.Renviron overrides ",
+      "variables inherited from the shell.",
+      call. = FALSE
+    )
+  }
+  if (status == 404) {
+    stop(
+      "Marker API returned 404 Not Found for ", marker_url,
+      ". MARKERSYNC_URL must be the full upload endpoint, ending in ",
+      "/marker/upload.",
+      call. = FALSE
+    )
+  }
+  if (status != 200) {
+    stop(
+      "Marker API returned ", status, ":\n",
+      substr(httr2::resp_body_string(resp), 1, 500),
+      call. = FALSE
     )
   }
 
   body <- httr2::resp_body_json(resp)
-  if (!isTRUE(body$success)) stop("Marker conversion failed for ", pdf_path)
+  if (!isTRUE(body$success)) {
+    reason <- if (!is.null(body$error)) body$error else "no reason given"
+    hint <- if (grepl("out of memory", reason, ignore.case = TRUE)) {
+      paste0(
+        "\nThis is a server-side condition: the Marker GPU is busy with ",
+        "another job. Retry in a few minutes; nothing is wrong locally."
+      )
+    } else ""
+    stop(
+      "Marker conversion failed for ", pdf_path, ":\n  ", reason, hint,
+      call. = FALSE
+    )
+  }
 
   stem <- if (!is.null(cite_key)) cite_key else
     tools::file_path_sans_ext(basename(pdf_path))

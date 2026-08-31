@@ -1,6 +1,6 @@
 Package: markersync
 Title: Sync Zotero PDFs to Markdown via a Marker Server
-Version: 0.2.0
+Version: 0.3.0
 Authors@R:
     person("Lab", "Member", email = "richard.bluhm@ivr.uni-stuttgart.de", role = c("aut", "cre"))
 Description: Tools for converting Zotero-managed PDFs to Markdown via a
@@ -11,7 +11,6 @@ Description: Tools for converting Zotero-managed PDFs to Markdown via a
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 Imports:
     httr2 (>= 1.0.0),
     curl,
@@ -22,3 +21,4 @@ Suggests:
 Config/testthat/edition: 3
 URL: https://github.com/rbluhm/markersync
 BugReports: https://github.com/rbluhm/markersync/issues
+Config/roxygen2/version: 8.0.0

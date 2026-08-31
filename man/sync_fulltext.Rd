@@ -7,8 +7,7 @@
 sync_fulltext(
   notes_dir = "literature/notes",
   fulltext_dir = "literature/fulltext",
-  zotero_storage = Sys.getenv("ZOTERO_STORAGE",
-    path.expand("~/Zotero/storage")),
+  zotero_storage = Sys.getenv("ZOTERO_STORAGE", path.expand("~/Zotero/storage")),
   force = FALSE,
   ...
 )
@@ -18,11 +17,14 @@ sync_fulltext(
 
 \item{fulltext_dir}{Directory where Marker output should land.}
 
-\item{zotero_storage}{Zotero local storage root.}
+\item{zotero_storage}{Zotero local storage root. Defaults to
+\verb{~/Zotero/storage}. Override per-machine via the \code{ZOTERO_STORAGE}
+environment variable.}
 
 \item{force}{If \code{TRUE}, re-convert even when fulltext already exists.}
 
-\item{...}{Additional arguments passed to \code{\link[=pdf_to_md]{pdf_to_md()}}.}
+\item{...}{Additional arguments passed to \code{\link[=pdf_to_md]{pdf_to_md()}} (e.g.
+\code{force_ocr}, \code{marker_url}).}
 }
 \value{
 A list with character vectors for \code{converted}, \code{no_pdf_link},
@@ -31,5 +33,11 @@ A list with character vectors for \code{converted}, \code{no_pdf_link},
 \description{
 Walks every \code{.md} file in \code{notes_dir}, extracts the Zotero PDF item ID
 from the note's \verb{zotero://select/library/items/...} link, locates the
-PDF in Zotero's storage, and converts it via \code{\link[=pdf_to_md]{pdf_to_md()}}.
+PDF in Zotero's storage, and converts it via \code{\link[=pdf_to_md]{pdf_to_md()}} if no
+fulltext file exists yet.
+}
+\details{
+Each note's filename (without the \code{.md} extension) is taken as the
+citekey, and the resulting fulltext is written as
+\verb{<fulltext_dir>/<citekey>.md}.
 }
