@@ -53,17 +53,22 @@ renviron <- path.expand("~/.Renviron")
 if (file.exists(renviron)) ok(renviron, " exists") else
   bad("no ~/.Renviron -- nothing will be configured. See references/setup.md")
 
-marker_url  <- Sys.getenv("MARKERSYNC_URL",  unset = "")
-marker_user <- Sys.getenv("MARKERSYNC_USER", unset = "")
-marker_pass <- Sys.getenv("MARKERSYNC_PASS", unset = "")
-zot         <- Sys.getenv("ZOTERO_STORAGE",  unset = "")
+marker_url <- Sys.getenv("MARKERSYNC_URL",        unset = "")
+api_key    <- Sys.getenv("MY_SERVER_IVR_API_KEY", unset = "")
+zot        <- Sys.getenv("ZOTERO_STORAGE",        unset = "")
 
 if (nzchar(marker_url)) ok("MARKERSYNC_URL = ", marker_url) else
   bad("MARKERSYNC_URL not set -> ask your Marker server admin for the /marker/upload URL")
-if (nzchar(marker_user)) ok("MARKERSYNC_USER set (", marker_user, ")") else
-  warn("MARKERSYNC_USER not set -- fine only if the server needs no basic auth")
-if (nzchar(marker_pass)) ok("MARKERSYNC_PASS set (value hidden)") else
-  warn("MARKERSYNC_PASS not set -- fine only if the server needs no basic auth")
+if (nzchar(api_key)) ok("MY_SERVER_IVR_API_KEY set (value hidden)") else
+  warn("MY_SERVER_IVR_API_KEY not set -- fine only if the server needs no authentication.",
+       "
+           Otherwise create a personal API key in Open WebUI",
+       " (Settings -> Account -> API keys) and add it to ~/.Renviron")
+# Basic auth was removed in markersync 0.4.0; leftover credentials are
+# harmless but misleading when someone reads their .Renviron.
+if (nzchar(Sys.getenv("MARKERSYNC_USER")) || nzchar(Sys.getenv("MARKERSYNC_PASS")))
+  warn("MARKERSYNC_USER / MARKERSYNC_PASS are set but no longer used",
+       " (basic auth was replaced by the API key) -- remove them from ~/.Renviron")
 
 # --- 3. Zotero storage -----------------------------------------------------
 cat("\n3. Zotero storage\n")
@@ -113,23 +118,37 @@ if (dir.exists(full_dir)) {
 # --- 5. Marker server ------------------------------------------------------
 cat("\n5. Marker server\n")
 if (nzchar(marker_url) && requireNamespace("httr2", quietly = TRUE)) {
-  # A bare GET is the cheapest liveness probe: the upload endpoint is
-  # POST-only, so 405 means "reachable and authenticated", 401 means
-  # "reachable, credentials rejected".
-  req <- httr2::request(marker_url)
-  if (nzchar(marker_user) && nzchar(marker_pass))
-    req <- httr2::req_auth_basic(req, marker_user, marker_pass)
-  req <- httr2::req_error(httr2::req_timeout(req, 20), is_error = function(r) FALSE)
-  resp <- tryCatch(httr2::req_perform(req), error = function(e) e)
+  probe <- function(url) {
+    req <- httr2::request(url)
+    if (nzchar(api_key)) req <- httr2::req_auth_bearer_token(req, api_key)
+    req <- httr2::req_error(httr2::req_timeout(req, 20), is_error = function(r) FALSE)
+    tryCatch(httr2::req_perform(req), error = function(e) e)
+  }
+  # Preferred probe: GET <base>/health answers 200 once the key is accepted
+  # and Marker is up. Servers without a health route fall back to a bare GET
+  # on the upload endpoint, which is POST-only: 405 means "reachable and
+  # authenticated".
+  health_url <- if (grepl("/upload/?$", marker_url)) sub("/upload/?$", "/health", marker_url)
+                else paste0(sub("/+$", "", marker_url), "/health")
+  resp <- probe(health_url); probed <- health_url
+  if (!inherits(resp, "error") && httr2::resp_status(resp) == 404) {
+    resp <- probe(marker_url); probed <- marker_url
+  }
 
   if (inherits(resp, "error")) {
-    bad("cannot reach ", marker_url, ": ", conditionMessage(resp),
+    bad("cannot reach ", probed, ": ", conditionMessage(resp),
         "\n           -> check the URL, your network, and whether the server needs a VPN")
   } else {
     st <- httr2::resp_status(resp)
-    if (st == 405) ok("endpoint reachable, credentials accepted (405 = POST-only, expected)")
-    else if (st == 401) bad("401 Unauthorized -- MARKERSYNC_USER / MARKERSYNC_PASS rejected")
+    if (st == 200 && probed == health_url) ok("server up, API key accepted (", health_url, " -> 200)")
+    else if (st == 405) ok("endpoint reachable, API key accepted (405 = POST-only, expected)")
+    else if (st == 401 && nzchar(api_key)) bad("401 Unauthorized -- MY_SERVER_IVR_API_KEY was rejected",
+        "\n           -> check for typos, and that the key has not been revoked in Open WebUI")
+    else if (st == 401) bad("401 Unauthorized -- the server requires an API key and none is set",
+        "\n           -> add MY_SERVER_IVR_API_KEY to ~/.Renviron")
     else if (st == 404) bad("404 Not Found -- MARKERSYNC_URL is wrong (it must end in /marker/upload)")
+    else if (st == 503) bad("503 -- the server cannot validate API keys right now (Open WebUI",
+        " backend unreachable). Server-side; retry later")
     else if (st >= 500) bad("server error ", st, " -- the Marker server itself is unhealthy")
     else ok("endpoint reachable (HTTP ", st, ")")
   }

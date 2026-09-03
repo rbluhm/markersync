@@ -14,7 +14,8 @@
 #   --name <stem>   output basename (default: the input filename)
 #   --pages <range> convert a page range only, e.g. 0-9 (0-based)
 #   --ocr           force OCR (scanned documents)
-#   --timeout <s>   server timeout in seconds (default 600)
+#   --timeout <s>   server timeout in seconds (default 1800; the server may
+#                   queue a job behind LLM traffic before it starts)
 #   --print         write the whole Markdown to stdout
 #   --head <n>      preview the first n lines (default 40; ignored with --print)
 
@@ -39,7 +40,7 @@ cache_root <- file.path(Sys.getenv("XDG_CACHE_HOME", unset = path.expand("~/.cac
 out_dir <- opt("--out", cache_root)
 stem    <- opt("--name")
 pages   <- opt("--pages")
-timeout <- as.numeric(opt("--timeout", "600"))
+timeout <- as.numeric(opt("--timeout", "1800"))
 head_n  <- as.integer(opt("--head", "40"))
 
 for (p in c("httr2", "curl", "base64enc")) {
@@ -69,6 +70,9 @@ if (is.null(stem)) stem <- tools::file_path_sans_ext(basename(path))
 marker_url <- Sys.getenv("MARKERSYNC_URL", unset = "")
 if (!nzchar(marker_url))
   stop("MARKERSYNC_URL is not set -- see references/setup.md", call. = FALSE)
+# Personal Open WebUI API key, sent as a bearer token. Absent means the
+# request goes out unauthenticated, which only a server without auth accepts.
+api_key <- Sys.getenv("MY_SERVER_IVR_API_KEY", unset = "")
 
 cat("Converting: ", path, " (", format(file.size(path), big.mark = ","), " bytes)\n", sep = "")
 
@@ -79,16 +83,7 @@ body <- list(file = curl::form_file(path),
 if (!is.null(pages)) body$page_range <- pages
 
 req <- httr2::request(marker_url)
-user <- Sys.getenv("MARKERSYNC_USER", unset = "")
-pass <- Sys.getenv("MARKERSYNC_PASS", unset = "")
-if (nzchar(user) && nzchar(pass)) {
-  req <- httr2::req_auth_basic(req, user, pass)
-} else if (nzchar(user) || nzchar(pass)) {
-  # Half-configured credentials would otherwise be dropped silently and come
-  # back as an unexplained 401.
-  warning("only one of MARKERSYNC_USER / MARKERSYNC_PASS is set -- ",
-          "sending no credentials", call. = FALSE, immediate. = TRUE)
-}
+if (nzchar(api_key)) req <- httr2::req_auth_bearer_token(req, api_key)
 req <- httr2::req_body_multipart(req, !!!body)
 req <- httr2::req_error(httr2::req_timeout(req, timeout), is_error = function(r) FALSE)
 
@@ -97,7 +92,16 @@ if (inherits(resp, "error"))
   stop("could not reach the Marker server: ", conditionMessage(resp), call. = FALSE)
 
 status <- httr2::resp_status(resp)
-if (status == 401) stop("401 Unauthorized -- check MARKERSYNC_USER / MARKERSYNC_PASS", call. = FALSE)
+if (status == 401) {
+  if (nzchar(api_key))
+    stop("401 Unauthorized -- the API key was rejected. Check MY_SERVER_IVR_API_KEY ",
+         "(your personal Open WebUI key; it may have been revoked)", call. = FALSE)
+  stop("401 Unauthorized -- no API key sent. Set MY_SERVER_IVR_API_KEY in ~/.Renviron",
+       call. = FALSE)
+}
+if (status == 503)
+  stop("503 -- the server cannot validate API keys right now (its Open WebUI backend ",
+       "is unreachable). Server-side; retry in a few minutes.", call. = FALSE)
 if (status == 404) stop("404 Not Found -- MARKERSYNC_URL should end in /marker/upload", call. = FALSE)
 if (status != 200)
   stop("Marker returned HTTP ", status, ":\n",

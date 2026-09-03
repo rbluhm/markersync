@@ -1,3 +1,23 @@
+# markersync 0.4.0
+
+* **Authentication moved from HTTP basic auth to a personal API key.** The
+  server now validates `Authorization: Bearer <key>` against Open WebUI's
+  personal API keys, so every user authenticates with their own key instead
+  of a shared username and password. Set `MY_SERVER_IVR_API_KEY` in
+  `~/.Renviron` (create the key under *Settings -> Account -> API keys* in
+  Open WebUI). Basic auth is removed entirely: `MARKERSYNC_USER` and
+  `MARKERSYNC_PASS` are no longer read, and the `marker_user` / `marker_pass`
+  arguments of `pdf_to_md()` are replaced by a single `marker_key`.
+* 401 responses now say whether the key was rejected or simply not sent,
+  and a 503 is explained as the server being unable to validate keys.
+* `doctor.R` checks the key, warns about leftover basic-auth variables, and
+  probes `<base>/health` (200 = up and authenticated) instead of relying on
+  a 405 from the upload endpoint. The 405 probe remains as a fallback for
+  servers without a health route.
+* Default `timeout` raised from 600 to 1800 seconds. The server parks its
+  models when idle and may hold a conversion until in-flight LLM traffic
+  drains, so a slow first byte is expected, not a hang.
+
 # markersync 0.3.0
 
 * `pdf_to_md()` now reports **why** a conversion failed. The Marker API

@@ -13,10 +13,10 @@ Reproduce the POST directly:
 ```r
 pdf  <- markersync::find_zotero_pdf("<ITEMKEY>", Sys.getenv("ZOTERO_STORAGE"))
 req  <- httr2::request(Sys.getenv("MARKERSYNC_URL")) |>
-  httr2::req_auth_basic(Sys.getenv("MARKERSYNC_USER"), Sys.getenv("MARKERSYNC_PASS")) |>
+  httr2::req_auth_bearer_token(Sys.getenv("MY_SERVER_IVR_API_KEY")) |>
   httr2::req_body_multipart(file = curl::form_file(pdf),
                             force_ocr = "false", paginate_output = "false") |>
-  httr2::req_timeout(600) |>
+  httr2::req_timeout(1800) |>
   httr2::req_error(is_error = function(r) FALSE)
 resp <- httr2::req_perform(req)
 str(httr2::resp_body_json(resp)[c("success", "error")])
@@ -49,18 +49,29 @@ not a client-side change.
 
 ### HTTP 401 Unauthorized
 
-`MARKERSYNC_USER` / `MARKERSYNC_PASS` are wrong or absent from the R session.
-Check they are in `~/.Renviron` and that R was restarted since. Verify what R
-actually sees without printing the password:
+Two flavours, and the package's error message tells you which:
+
+- **"the API key was rejected"** — a key was sent and the server said no. It
+  is mistyped, or it was revoked in Open WebUI (*Settings -> Account -> API
+  keys*). Generate a fresh one and replace the line in `~/.Renviron`.
+- **"no API key was sent"** — `MY_SERVER_IVR_API_KEY` is absent from the R
+  session. Check it is in `~/.Renviron` and that R was restarted since.
+
+Verify what R actually sees without printing the key:
 
 ```r
-nzchar(Sys.getenv("MARKERSYNC_USER")); nzchar(Sys.getenv("MARKERSYNC_PASS"))
+nzchar(Sys.getenv("MY_SERVER_IVR_API_KEY"))
 ```
+
+### HTTP 503
+
+The reverse proxy could not reach Open WebUI to validate the key. Server-side;
+nothing to change locally. Retry in a few minutes or tell the admin.
 
 ### Shell environment variables appear to be ignored
 
 `~/.Renviron` **overrides** variables inherited from the shell, so
-`MARKERSYNC_PASS=other Rscript ...` silently keeps using the value in
+`MY_SERVER_IVR_API_KEY=other Rscript ...` silently keeps using the value in
 `~/.Renviron`. This bites when testing against a second server or reproducing a
 credential problem. To override for one run, point R at a different env file:
 
@@ -71,7 +82,9 @@ R_ENVIRON_USER=/path/to/alt.Renviron Rscript ...
 ### HTTP 405 on a plain GET
 
 Expected and healthy. The upload endpoint is POST-only, so 405 means the URL
-and credentials are both good. The doctor uses this as its liveness probe.
+and key are both good. The doctor prefers `<base>/health` (200 when up and
+authenticated) and falls back to this 405 probe on servers without a health
+route.
 
 ### HTTP 404
 
@@ -114,10 +127,16 @@ markersync::pdf_to_md(pdf, cite_key = "<key>", force_ocr = TRUE)
 
 `page_range = "0-20"` limits the work while testing.
 
-### Timeout after 10 minutes
+### Timeout after 30 minutes
 
-`pdf_to_md(timeout = ...)` defaults to 600 seconds. Book-length PDFs exceed it.
-Raise it, or convert in slices with `page_range`.
+`pdf_to_md(timeout = ...)` defaults to 1800 seconds. Book-length PDFs exceed
+it. Raise it, or convert in slices with `page_range`.
+
+A slow start is normal, not a hang: the server parks its models when idle and
+reloads them on the first call (a few seconds), and if the GPU is busy serving
+LLM requests the conversion waits for those to drain first, up to about 15
+minutes in the worst case. Conversion itself runs at roughly 0.5–3 s per page
+once it starts.
 
 ### Images are missing from the fulltext
 

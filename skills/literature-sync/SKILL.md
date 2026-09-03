@@ -131,8 +131,10 @@ Rscript -e 'p <- markersync::find_zotero_pdf("QE88SWIQ", Sys.getenv("ZOTERO_STOR
 Rscript -e 'markersync::pdf_to_md("<path>", cite_key = "<key>", force_ocr = TRUE)'
 ```
 
-Conversion is GPU work on a shared server and takes ~1-5 min per paper. Run it
-in the background and report the buckets when it returns; do not poll.
+Conversion is GPU work on a shared server and takes ~1-5 min per paper, plus
+a possible wait of up to ~15 min at the start if the GPU is busy serving LLM
+requests (the default timeout is 30 min for that reason). Run it in the
+background and report the buckets when it returns; do not poll.
 
 ## Diagnose
 
@@ -162,10 +164,11 @@ The two you will hit most:
 ## Rules
 
 - **Never write credentials into a file inside a repository.** `MARKERSYNC_URL`,
-  `MARKERSYNC_USER`, `MARKERSYNC_PASS`, and `ZOTERO_STORAGE` belong in
-  `~/.Renviron` only. When helping with setup, ask the user for the password or
-  tell them to paste it in themselves — do not echo it back, and do not read
-  `~/.Renviron` aloud, since it usually holds unrelated API keys too.
+  `MY_SERVER_IVR_API_KEY`, and `ZOTERO_STORAGE` belong in `~/.Renviron` only.
+  The key is the user's personal Open WebUI API key. When helping with setup,
+  tell them to create it themselves (*Settings -> Account -> API keys*) and
+  paste it in — do not echo it back, and do not read `~/.Renviron` aloud,
+  since it usually holds unrelated API keys too.
 - `literature/fulltext/` is machine-generated and often large. Check it is
   either gitignored or deliberately committed before adding files.
 - Do not hand-edit files in `literature/notes/`. Obsidian regenerates them from
