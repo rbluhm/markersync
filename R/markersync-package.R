@@ -12,18 +12,23 @@
 #'
 #' @section Configuration:
 #'
-#' Two environment variables are read at run time:
+#' Three environment variables are read at run time:
 #'
 #' - `ZOTERO_STORAGE`: path to your Zotero storage root. Defaults to
 #'   `~/Zotero/storage`.
 #' - `MARKERSYNC_URL`: full URL to your Marker server's upload endpoint.
 #'   Required (no default) — set this per machine.
+#' - `MY_SERVER_IVR_API_KEY`: your personal Open WebUI API key, sent as a
+#'   bearer token on every request. Create it under *Settings -> Account ->
+#'   API keys* on the Open WebUI instance that fronts the Marker server.
+#'   Required unless the server needs no authentication.
 #'
 #' Set these per-machine in `~/.Renviron`:
 #'
 #' ```
 #' ZOTERO_STORAGE=/Users/me/Zotero/storage
 #' MARKERSYNC_URL=https://your-marker-server.example.com/marker/upload
+#' MY_SERVER_IVR_API_KEY=sk-...
 #' ```
 #'
 #' @keywords internal

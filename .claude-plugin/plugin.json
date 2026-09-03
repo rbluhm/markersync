@@ -1,6 +1,6 @@
 {
   "name": "markersync",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Convert PDFs to Markdown through a self-hosted Marker server, one file at a time or as a Zotero -> Obsidian literature workflow.",
   "author": { "name": "Richard Bluhm" },
   "homepage": "https://github.com/rbluhm/markersync"

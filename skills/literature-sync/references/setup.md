@@ -8,7 +8,12 @@ Stop and run the doctor after each block if something looks off.
 Ask whoever runs the Marker server for:
 
 - the upload URL, ending in `/marker/upload`
-- the HTTP basic-auth username and password
+- an account on the Open WebUI instance that fronts it
+
+Then create your own API key in Open WebUI: *Settings -> Account -> API
+keys*. It starts with `sk-`. This is a personal key — do not share it, and
+do not use someone else's. If it ever leaks, revoke it in the same place;
+that cuts Marker access within a minute.
 
 ## 1. R side
 
@@ -34,15 +39,18 @@ quotes needed, no spaces around `=`):
 ```
 ZOTERO_STORAGE=/home/you/Zotero/storage
 MARKERSYNC_URL=https://your-server.example.edu/marker/upload
-MARKERSYNC_USER=your_user
-MARKERSYNC_PASS=your_password
+MY_SERVER_IVR_API_KEY=sk-...
 ```
 
 Restart R afterwards — `.Renviron` is only read at startup.
 
 **This file is a secret store.** It is in the home directory, not a repo,
-precisely so it never gets committed. Never copy these four lines into a
+precisely so it never gets committed. Never copy these three lines into a
 project file, a script, or a skill.
+
+If you are upgrading from markersync 0.3 or earlier, delete the old
+`MARKERSYNC_USER` and `MARKERSYNC_PASS` lines; basic auth is gone and the
+doctor will nag about them.
 
 Finding `ZOTERO_STORAGE` — it is the `storage` folder inside Zotero's data
 directory, visible in Zotero under *Settings -> Advanced -> Files and Folders*:

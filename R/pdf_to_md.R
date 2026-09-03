@@ -12,15 +12,20 @@
 #' @param marker_url Full URL of the Marker upload endpoint. Read from the
 #'   `MARKERSYNC_URL` environment variable if `NULL`. An error is thrown if
 #'   neither is set.
-#' @param marker_user,marker_pass Optional HTTP basic-auth credentials. Read
-#'   from `MARKERSYNC_USER` / `MARKERSYNC_PASS` if `NULL`. Both must be
-#'   present for authentication to be attempted; a warning is issued if only
-#'   one is set.
+#' @param marker_key API key sent as a bearer token
+#'   (`Authorization: Bearer <key>`). Read from the `MY_SERVER_IVR_API_KEY`
+#'   environment variable if `NULL`. This is your personal Open WebUI API
+#'   key, created under *Settings -> Account -> API keys* on the Open WebUI
+#'   instance that fronts the Marker server. If neither is set, the request
+#'   is sent without credentials, which only works against a server that
+#'   requires none.
 #' @param force_ocr Pass `TRUE` to force OCR on every page (helpful for
 #'   scanned PDFs).
 #' @param page_range Optional zero-indexed page range, e.g. `"0,5-10,20"`.
 #' @param paginate Insert page separators in the output Markdown.
-#' @param timeout Request timeout in seconds (default: 600).
+#' @param timeout Request timeout in seconds (default: 1800). The server
+#'   parks its models when idle and may queue a job behind in-flight LLM
+#'   traffic, so a slow first byte is not a hang.
 #'
 #' @return Path to the written `.md` file (invisibly).
 #' @export
@@ -28,12 +33,11 @@ pdf_to_md <- function(pdf_path,
                       out_dir     = "literature/fulltext",
                       cite_key    = NULL,
                       marker_url  = NULL,
-                      marker_user = NULL,
-                      marker_pass = NULL,
+                      marker_key  = NULL,
                       force_ocr   = FALSE,
                       page_range  = NULL,
                       paginate    = FALSE,
-                      timeout     = 600) {
+                      timeout     = 1800) {
 
   stopifnot(file.exists(pdf_path))
 
@@ -55,25 +59,13 @@ pdf_to_md <- function(pdf_path,
   )
   if (!is.null(page_range)) body_parts$page_range <- page_range
 
-  req <- httr2::request(marker_url)
+  if (is.null(marker_key)) {
+    marker_key <- Sys.getenv("MY_SERVER_IVR_API_KEY", unset = "")
+  }
 
-  if (!is.null(marker_user) && !is.null(marker_pass)) {
-    req <- req |>
-      httr2::req_auth_basic(username = marker_user, password = marker_pass)
-  } else {
-    marker_user <- Sys.getenv("MARKERSYNC_USER", unset = "")
-    marker_pass <- Sys.getenv("MARKERSYNC_PASS", unset = "")
-    if (nzchar(marker_user) && nzchar(marker_pass)) {
-      req <- req |>
-        httr2::req_auth_basic(username = marker_user, password = marker_pass)
-    } else if (nzchar(marker_user) || nzchar(marker_pass)) {
-      warning(
-        "Only one of MARKERSYNC_USER / MARKERSYNC_PASS is set, so no ",
-        "credentials are being sent. A server requiring basic auth will ",
-        "answer 401.",
-        call. = FALSE, immediate. = TRUE
-      )
-    }
+  req <- httr2::request(marker_url)
+  if (nzchar(marker_key)) {
+    req <- httr2::req_auth_bearer_token(req, marker_key)
   }
 
   resp <- req |>
@@ -84,10 +76,27 @@ pdf_to_md <- function(pdf_path,
 
   status <- httr2::resp_status(resp)
   if (status == 401) {
+    if (nzchar(marker_key)) {
+      stop(
+        "Marker API returned 401 Unauthorized: the API key was rejected. ",
+        "Check MY_SERVER_IVR_API_KEY in ~/.Renviron (it must be your ",
+        "personal Open WebUI API key, and may have been revoked), and note ",
+        "that ~/.Renviron overrides variables inherited from the shell.",
+        call. = FALSE
+      )
+    }
     stop(
-      "Marker API returned 401 Unauthorized. Check MARKERSYNC_USER and ",
-      "MARKERSYNC_PASS in ~/.Renviron, and note that ~/.Renviron overrides ",
-      "variables inherited from the shell.",
+      "Marker API returned 401 Unauthorized and no API key was sent. Set ",
+      "MY_SERVER_IVR_API_KEY in ~/.Renviron to your personal Open WebUI API ",
+      "key and restart R.",
+      call. = FALSE
+    )
+  }
+  if (status == 503) {
+    stop(
+      "Marker API returned 503: the server could not validate API keys ",
+      "(its Open WebUI backend is unreachable). This is a server-side ",
+      "condition; retry in a few minutes.",
       call. = FALSE
     )
   }

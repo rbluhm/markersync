@@ -9,12 +9,11 @@ pdf_to_md(
   out_dir = "literature/fulltext",
   cite_key = NULL,
   marker_url = NULL,
-  marker_user = NULL,
-  marker_pass = NULL,
+  marker_key = NULL,
   force_ocr = FALSE,
   page_range = NULL,
   paginate = FALSE,
-  timeout = 600
+  timeout = 1800
 )
 }
 \arguments{
@@ -29,10 +28,13 @@ Defaults to the PDF's basename.}
 \code{MARKERSYNC_URL} environment variable if \code{NULL}. An error is thrown if
 neither is set.}
 
-\item{marker_user, marker_pass}{Optional HTTP basic-auth credentials. Read
-from \code{MARKERSYNC_USER} / \code{MARKERSYNC_PASS} if \code{NULL}. Both must be
-present for authentication to be attempted; a warning is issued if only
-one is set.}
+\item{marker_key}{API key sent as a bearer token
+(\verb{Authorization: Bearer <key>}). Read from the \code{MY_SERVER_IVR_API_KEY}
+environment variable if \code{NULL}. This is your personal Open WebUI API
+key, created under \emph{Settings -> Account -> API keys} on the Open WebUI
+instance that fronts the Marker server. If neither is set, the request
+is sent without credentials, which only works against a server that
+requires none.}
 
 \item{force_ocr}{Pass \code{TRUE} to force OCR on every page (helpful for
 scanned PDFs).}
@@ -41,7 +43,9 @@ scanned PDFs).}
 
 \item{paginate}{Insert page separators in the output Markdown.}
 
-\item{timeout}{Request timeout in seconds (default: 600).}
+\item{timeout}{Request timeout in seconds (default: 1800). The server
+parks its models when idle and may queue a job behind in-flight LLM
+traffic, so a slow first byte is not a hang.}
 }
 \value{
 Path to the written \code{.md} file (invisibly).

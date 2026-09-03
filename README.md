@@ -40,25 +40,25 @@ Add to `~/.Renviron` (one-time, per machine):
 ```
 ZOTERO_STORAGE=/Users/yourname/Zotero/storage
 MARKERSYNC_URL=https://your-marker-server.example.com/marker/upload
-
-# only if your server sits behind HTTP basic auth:
-MARKERSYNC_USER=your_user
-MARKERSYNC_PASS=your_password
+MY_SERVER_IVR_API_KEY=sk-...
 ```
 
 Restart R for changes to take effect. The `MARKERSYNC_URL` must point at
 a running Marker API endpoint — see
 [datalab-to/marker](https://github.com/datalab-to/marker) for setup.
 
-Both `MARKERSYNC_USER` and `MARKERSYNC_PASS` must be set for authentication
-to be attempted; setting only one sends no credentials at all (the package
-warns when it detects this).
+`MY_SERVER_IVR_API_KEY` is your **personal Open WebUI API key**. Create it in
+the Open WebUI instance that fronts your Marker server, under *Settings →
+Account → API keys*; it is the same key you would use for that instance's
+chat-completions API. The package sends it as `Authorization: Bearer <key>`
+on every request. Revoking the key in Open WebUI revokes Marker access too.
+Leave it unset only if your server needs no authentication at all.
 
 Two things that catch people out:
 
 - `~/.Renviron` **overrides** variables inherited from the shell, so
-  `MARKERSYNC_PASS=other Rscript ...` will not do what you expect. To override
-  for a single run, use `R_ENVIRON_USER=/path/to/alt.Renviron Rscript ...`.
+  `MY_SERVER_IVR_API_KEY=other Rscript ...` will not do what you expect. To
+  override for a single run, use `R_ENVIRON_USER=/path/to/alt.Renviron Rscript ...`.
 - `ZOTERO_STORAGE` is the `storage` folder inside Zotero's data directory,
   shown under *Settings → Advanced → Files and Folders*. On a snap install it
   is `~/snap/zotero-snap/common/Zotero/storage`; on flatpak,
@@ -184,6 +184,14 @@ an `/upload` endpoint accepting multipart form-data with a `file` field.
 The simplest setup is the Docker image built from
 [datalab-to/marker](https://github.com/datalab-to/marker), behind a
 reverse proxy with HTTPS.
+
+Authentication is the reverse proxy's job: the client sends
+`Authorization: Bearer <key>` and expects the proxy to validate the key
+(in our setup, against the personal API keys of an Open WebUI instance on
+the same host) before forwarding to Marker. A rejected key should come
+back as HTTP 401. If the proxy also exposes `<base>/health`, the skill's
+`doctor.R` uses it as its liveness check; otherwise it falls back to a GET
+on the upload URL and treats the resulting 405 as "up and authenticated".
 
 The server response shape that markersync expects:
 

@@ -22,18 +22,23 @@ PDF that doesn't yet have a corresponding fulltext file.
 \section{Configuration}{
 
 
-Two environment variables are read at run time:
+Three environment variables are read at run time:
 \itemize{
 \item \code{ZOTERO_STORAGE}: path to your Zotero storage root. Defaults to
 \verb{~/Zotero/storage}.
 \item \code{MARKERSYNC_URL}: full URL to your Marker server's upload endpoint.
 Required (no default) — set this per machine.
+\item \code{MY_SERVER_IVR_API_KEY}: your personal Open WebUI API key, sent as a
+bearer token on every request. Create it under \emph{Settings -> Account ->
+API keys} on the Open WebUI instance that fronts the Marker server.
+Required unless the server needs no authentication.
 }
 
 Set these per-machine in \verb{~/.Renviron}:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{ZOTERO_STORAGE=/Users/me/Zotero/storage
 MARKERSYNC_URL=https://your-marker-server.example.com/marker/upload
+MY_SERVER_IVR_API_KEY=sk-...
 }\if{html}{\out{</div>}}
 }
 
