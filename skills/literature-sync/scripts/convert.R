@@ -14,15 +14,14 @@
 #   --name <stem>   output basename (default: the input filename)
 #   --pages <range> convert a page range only, e.g. 0-9 (0-based)
 #   --ocr           force OCR (scanned documents)
-#   --timeout <s>   server timeout in seconds (default 1800; the server may
-#                   queue a job behind LLM traffic before it starts)
+#   --timeout <s>   server timeout in seconds (default 1800)
 #   --print         write the whole Markdown to stdout
 #   --head <n>      preview the first n lines (default 40; ignored with --print)
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) == 0) {
   cat("Usage: Rscript convert.R <path|ZOTEROKEY> [--out DIR] [--name STEM]",
-      "[--pages 0-9] [--ocr] [--timeout 600] [--print | --head N]\n")
+      "[--pages 0-9] [--ocr] [--timeout 1800] [--print | --head N]\n")
   quit(status = 2)
 }
 
@@ -85,7 +84,9 @@ if (!is.null(pages)) body$page_range <- pages
 req <- httr2::request(marker_url)
 if (nzchar(api_key)) req <- httr2::req_auth_bearer_token(req, api_key)
 req <- httr2::req_body_multipart(req, !!!body)
-req <- httr2::req_error(httr2::req_timeout(req, timeout), is_error = function(r) FALSE)
+req <- httr2::req_timeout(req, timeout)
+req <- httr2::req_options(req, low_speed_time = 0)
+req <- httr2::req_error(req, is_error = function(r) FALSE)
 
 resp <- tryCatch(httr2::req_perform(req), error = function(e) e)
 if (inherits(resp, "error"))
