@@ -23,9 +23,9 @@
 #'   scanned PDFs).
 #' @param page_range Optional zero-indexed page range, e.g. `"0,5-10,20"`.
 #' @param paginate Insert page separators in the output Markdown.
-#' @param timeout Request timeout in seconds (default: 1800). The server
-#'   parks its models when idle and may queue a job behind in-flight LLM
-#'   traffic, so a slow first byte is not a hang.
+#' @param timeout Request timeout in seconds (default: 1800). Curl's
+#'   low-speed abort is disabled so this timeout applies while the server
+#'   processes the document without sending a response.
 #'
 #' @return Path to the written `.md` file (invisibly).
 #' @export
@@ -71,6 +71,7 @@ pdf_to_md <- function(pdf_path,
   resp <- req |>
     httr2::req_body_multipart(!!!body_parts) |>
     httr2::req_timeout(timeout) |>
+    httr2::req_options(low_speed_time = 0) |>
     httr2::req_error(is_error = function(r) FALSE) |>
     httr2::req_perform()
 

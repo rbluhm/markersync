@@ -43,9 +43,9 @@ scanned PDFs).}
 
 \item{paginate}{Insert page separators in the output Markdown.}
 
-\item{timeout}{Request timeout in seconds (default: 1800). The server
-parks its models when idle and may queue a job behind in-flight LLM
-traffic, so a slow first byte is not a hang.}
+\item{timeout}{Request timeout in seconds (default: 1800). Curl's
+low-speed abort is disabled so this timeout applies while the server
+processes the document without sending a response.}
 }
 \value{
 Path to the written \code{.md} file (invisibly).

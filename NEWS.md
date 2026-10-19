@@ -17,6 +17,8 @@
 * Default `timeout` raised from 600 to 1800 seconds. The server parks its
   models when idle and may hold a conversion until in-flight LLM traffic
   drains, so a slow first byte is expected, not a hang.
+* Disabled curl's low-speed abort for Marker requests, so the configured
+  timeout is honored while the server converts a document without sending data.
 
 # markersync 0.3.0
 
