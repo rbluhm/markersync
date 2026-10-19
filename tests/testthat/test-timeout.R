@@ -20,6 +20,6 @@ test_that("the request timeout controls slow Marker responses", {
     )
   }))
 
-  expect_equal(request_options$timeout, 3600)
+  expect_equal(request_options$timeout_ms, 3600000)
   expect_equal(request_options$low_speed_time, 0)
 })
