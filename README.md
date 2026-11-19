@@ -149,6 +149,36 @@ The skill also ships the Obsidian note template it expects, at
 `skills/literature-sync/assets/paper_note.md`, and a full setup walkthrough at
 `skills/literature-sync/references/setup.md`.
 
+### Adding papers to Zotero: `zotero-add-paper`
+
+A second skill fills the start of the chain. Give Claude Code a DOI (or a
+list) and it adds the paper to Zotero like the magic wand does, then attaches
+the **official publisher PDF**, downloaded through your own Chrome so your
+institutional or society access applies. It never attaches working papers or
+preprints. When there is no licensed copy it stops and asks you.
+
+It talks to the running Zotero desktop app through Zotero's local connector
+(`127.0.0.1:23119`, the channel the browser Zotero Connector uses). Zotero
+then syncs the item and uploads the PDF to whatever file storage you use
+(WebDAV, Zotero Storage). No API key needed.
+
+Requirements, all on the same computer: Zotero 7 desktop, Claude Code with
+the Claude in Chrome extension, Python 3 and poppler (`pdfinfo`,
+`pdftotext`). It comes with the plugin install above, or copy it manually:
+
+```sh
+cp -r markersync/skills/zotero-add-paper ~/.claude/skills/
+python3 ~/.claude/skills/zotero-add-paper/scripts/zotero_paper.py doctor
+```
+
+Then ask:
+
+> add 10.1257/aer.104.8.2456 to Zotero
+
+Optional settings (fixed target collection, downloads folder) go in
+`~/.config/zotero-add-paper.json`; see
+`skills/zotero-add-paper/references/setup.md`.
+
 ## Note format
 
 Each note in `literature/notes/<citekey>.md` should contain a Zotero PDF
